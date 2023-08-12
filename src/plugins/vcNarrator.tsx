@@ -69,10 +69,11 @@ function clean(str: string) {
         .trim();
 }
 
-function formatText(str: string, user: string, channel: string) {
+function formatText(str: string, user: string, channel: string, displayNameUser: string) {
     return str
         .replaceAll("{{USER}}", clean(user) || (user ? "Someone" : ""))
-        .replaceAll("{{CHANNEL}}", clean(channel) || "channel");
+        .replaceAll("{{CHANNEL}}", clean(channel) || "channel")
+        .replaceAll("{{DISPLAY_NAME_USER}}", clean(displayNameUser) || (displayNameUser ? "Someone" : ""));
 }
 
 /*
@@ -143,7 +144,7 @@ function updateStatuses(type: string, { deaf, mute, selfDeaf, selfMute, userId, 
 function playSample(tempSettings: any, type: string) {
     const settings = Object.assign({}, Settings.plugins.VcNarrator, tempSettings);
 
-    speak(formatText(settings[type + "Message"], UserStore.getCurrentUser().username, "general"), settings);
+    speak(formatText(settings[type + "Message"], UserStore.getCurrentUser().username, "general", (UserStore.getUser(userId).global_name ? UserStore.getUser(userId).global_name : UserStore.getUser(userId).username)), settings);
 }
 
 export default definePlugin({
@@ -171,9 +172,10 @@ export default definePlugin({
 
                 const template = Settings.plugins.VcNarrator[type + "Message"];
                 const user = isMe && !Settings.plugins.VcNarrator.sayOwnName ? "" : UserStore.getUser(userId).username;
+                const displayNameUser = isMe && !Settings.plugins.VcNarrator.sayOwnName ? "" : (UserStore.getUser(userId).global_name ? UserStore.getUser(userId).global_name : UserStore.getUser(userId).username);
                 const channel = ChannelStore.getChannel(id).name;
 
-                speak(formatText(template, user, channel));
+                speak(formatText(template, user, channel, displayNameUser));
 
                 // updateStatuses(type, state, isMe);
             }
@@ -185,7 +187,7 @@ export default definePlugin({
             if (!s) return;
 
             const event = s.mute || s.selfMute ? "unmute" : "mute";
-            speak(formatText(Settings.plugins.VcNarrator[event + "Message"], "", ChannelStore.getChannel(chanId).name));
+            speak(formatText(Settings.plugins.VcNarrator[event + "Message"], "", ChannelStore.getChannel(chanId).name, ""));
         },
 
         AUDIO_TOGGLE_SELF_DEAF() {
@@ -194,7 +196,7 @@ export default definePlugin({
             if (!s) return;
 
             const event = s.deaf || s.selfDeaf ? "undeafen" : "deafen";
-            speak(formatText(Settings.plugins.VcNarrator[event + "Message"], "", ChannelStore.getChannel(chanId).name));
+            speak(formatText(Settings.plugins.VcNarrator[event + "Message"], "", ChannelStore.getChannel(chanId).name, ""));
         }
     },
 
@@ -311,8 +313,8 @@ export default definePlugin({
                     You can customise the spoken messages below. You can disable specific messages by setting them to nothing
                 </Forms.FormText>
                 <Forms.FormText>
-                    The special placeholders <code>{"{{USER}}"}</code> and <code>{"{{CHANNEL}}"}</code>{" "}
-                    will be replaced with the user's name (nothing if it's yourself) and the channel's name respectively
+                    The special placeholders <code>{"{{USER}}"}</code>, <code>{"{{DISPLAY_NAME_USER}}"}</code> and <code>{"{{CHANNEL}}"}</code>{" "}
+                    will be replaced with the user's name (nothing if it's yourself), user's displayed name and the channel's name respectively
                 </Forms.FormText>
                 {hasEnglishVoices && (
                     <>
